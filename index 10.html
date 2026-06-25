@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>K-Pop Train Life Demo V3</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      color: white;
+      background: linear-gradient(135deg, #18082f, #4a0c80, #081433);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    .stars {
+      position: fixed;
+      inset: 0;
+      background-image:
+        radial-gradient(white 1px, transparent 1px),
+        radial-gradient(#ffd6ff 1px, transparent 1px);
+      background-size: 70px 70px, 120px 120px;
+      animation: moveStars 18s linear infinite;
+      opacity: 0.35;
+      z-index: -1;
+    }
+    @keyframes moveStars { from { background-position: 0 0; } to { background-position: 300px 500px; } }
+    .screen { display: none; min-height: 100vh; padding: 26px; text-align: center; }
+    .active { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    h1 { font-size: 48px; margin: 10px; text-shadow: 0 0 20px #ff9cff; }
+    h2 { font-size: 31px; }
+    p { font-size: 18px; max-width: 720px; line-height: 1.4; }
+    button, select, input {
+      margin: 8px;
+      padding: 13px 20px;
+      border: none;
+      border-radius: 18px;
+      font-size: 16px;
+    }
+    button {
+      background: linear-gradient(90deg, #ff66d8, #8b5cff);
+      color: white;
+      cursor: pointer;
+      box-shadow: 0 0 18px rgba(255, 130, 255, 0.5);
+      transition: 0.15s;
+    }
+    button:hover { transform: scale(1.04); }
+    .card {
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 25px;
+      padding: 24px;
+      max-width: 840px;
+      width: 95%;
+      backdrop-filter: blur(8px);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+      gap: 12px;
+      width: 100%;
+    }
+    .idol { font-size: 82px; margin: 12px; }
+    .stat {
+      display: flex;
+      justify-content: space-between;
+      background: rgba(255,255,255,0.1);
+      padding: 10px 15px;
+      border-radius: 12px;
+      margin: 8px;
+    }
+    .small { opacity: 0.86; font-size: 14px; }
+    .rankbox {
+      background: rgba(255,255,255,0.1);
+      padding: 12px;
+      border-radius: 15px;
+      margin-top: 10px;
+      text-align: left;
+    }
+    .confetti { font-size: 52px; animation: pop 1s infinite alternate; }
+    @keyframes pop { from { transform: scale(1); } to { transform: scale(1.12); } }
+  </style>
+</head>
+<body>
+  <div class="stars"></div>
+
+  <section id="home" class="screen active">
+    <h1>✨ K-Pop Train Life ✨</h1>
+    <p>Train hard. Pass the audition. Join an entertainment company. Debut as a global star.</p>
+    <button onclick="newGame()">▶ New Game</button>
+    <button onclick="loadGame()">☁️ Continue Saved Game</button>
+  </section>
+
+  <section id="creator" class="screen">
+    <div class="card">
+      <h2>👤 Create Your Idol</h2>
+      <div class="idol">💃</div>
+      <input id="idolName" placeholder="Idol name" />
+      <select id="nationality">
+        <option>Thailand</option><option>Korea</option><option>Japan</option>
+        <option>USA</option><option>China</option><option>Brazil</option>
+        <option>Australia</option><option>Other</option>
+      </select>
+      <select id="style">
+        <option>Pink trainee outfit</option>
+        <option>Black dance outfit</option>
+        <option>Blue casual outfit</option>
+        <option>White audition outfit</option>
+      </select>
+      <br>
+      <button onclick="saveCharacter()">✅ Continue to Audition</button>
+    </div>
+  </section>
+
+  <section id="audition" class="screen">
+    <div class="card">
+      <h2>🎤 Global Audition</h2>
+      <p>Complete 3 audition tests. Score 60+ to pass each one.</p>
+      <div class="grid">
+        <button onclick="testSkill('Dance')">💃 Dance Test</button>
+        <button onclick="testSkill('Vocals')">🎤 Vocal Test</button>
+        <button onclick="testSkill('Stage Presence')">⭐ Stage Presence</button>
+      </div>
+      <div id="auditionResults"></div>
+      <button onclick="checkAudition()">Check Results</button>
+    </div>
+  </section>
+
+  <section id="company" class="screen">
+    <div class="card">
+      <h2>🏢 Choose Your Entertainment Company</h2>
+      <p>You passed! Pick the company you want to join.</p>
+      <div class="grid" id="companyButtons"></div>
+    </div>
+  </section>
+
+  <section id="trainee" class="screen">
+    <div class="card">
+      <h2>🌟 Trainee Life</h2>
+      <p id="welcomeText"></p>
+      <p><b id="dayText">Day 1</b> — Self-practice until 22:00, then the company van takes trainees to the apartment.</p>
+      <div class="stat"><span>💃 Dance</span><span id="dance">10</span></div>
+      <div class="stat"><span>🎤 Vocals</span><span id="vocals">10</span></div>
+      <div class="stat"><span>⭐ Stage Presence</span><span id="stage">10</span></div>
+      <div class="stat"><span>⚡ Energy</span><span id="energy">100</span></div>
+      <button onclick="practice('dance')">Practice Dance</button>
+      <button onclick="practice('vocals')">Practice Vocals</button>
+      <button onclick="practice('stage')">Practice Stage Presence</button>
+      <button onclick="nextDay()">😴 Sleep / Next Day</button>
+      <p class="small">Every 10 days in this demo = monthly evaluation day. Debut can happen after strong evaluations.</p>
+    </div>
+  </section>
+
+  <section id="evaluation" class="screen">
+    <div class="card">
+      <h2>🏆 Monthly Evaluation Day</h2>
+      <p>The CEO and trainers watched all 100 trainees perform.</p>
+      <div id="evaluationText" class="rankbox"></div>
+      <button onclick="continueAfterEvaluation()">Continue</button>
+    </div>
+  </section>
+
+  <section id="debut" class="screen">
+    <div class="card">
+      <div class="confetti">🎉🎤🎉</div>
+      <h2>Debut Announcement Day</h2>
+      <p>All trainees gather in the main practice hall. The CEO walks onto the stage.</p>
+      <p><b>CEO:</b> “After reviewing monthly evaluations, skills, teamwork, and attitude, we have selected the debut team.”</p>
+      <div id="debutText" class="rankbox"></div>
+      <button onclick="showIdolLife()">Start Idol Life</button>
+    </div>
+  </section>
+
+  <section id="idolLife" class="screen">
+    <div class="card">
+      <h2>🌍 Idol Life Unlocked</h2>
+      <p id="idolLifeText"></p>
+      <div class="grid">
+        <button onclick="idolEvent('💿 Your group released an original debut album!')">Release Album</button>
+        <button onclick="idolEvent('💖 Fans cheered at your fan meeting!')">Fan Meeting</button>
+        <button onclick="idolEvent('📸 You completed a photoshoot and gained fans!')">Photoshoot</button>
+        <button onclick="idolEvent('🌍 Your company announced a world tour!')">World Tour</button>
+        <button onclick="idolEvent('🎵 Your group prepared a new comeback!')">Comeback</button>
+      </div>
+      <p id="idolEventText"></p>
+    </div>
+  </section>
+
+  <script>
+    let state = {
+      name: "Trainee",
+      company: "",
+      results: {},
+      stats: { dance: 10, vocals: 10, stage: 10, energy: 100 },
+      day: 1,
+      warnings: 0,
+      evaluations: 0,
+      debuted: false,
+      groupName: "",
+      members: []
+    };
+
+    const companies = ["HYBE", "SM", "YG", "JYP", "STARSHIP", "KQ", "PLEDIS", "CUBE", "WakeOne", "RBW"];
+    const npcNames = ["Hana", "Mina", "Yuna", "Sora", "Jae", "Nari", "Lina", "Haru", "Ari", "Jin"];
+
+    function show(id) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+
+    function save() {
+      localStorage.setItem("kpopTrainLifeSaveV3", JSON.stringify(state));
+    }
+
+    function newGame() {
+      localStorage.removeItem("kpopTrainLifeSaveV3");
+      state = {
+        name: "Trainee",
+        company: "",
+        results: {},
+        stats: { dance: 10, vocals: 10, stage: 10, energy: 100 },
+        day: 1,
+        warnings: 0,
+        evaluations: 0,
+        debuted: false,
+        groupName: "",
+        members: []
+      };
+      show('creator');
+    }
+
+    function loadGame() {
+      const saved = localStorage.getItem("kpopTrainLifeSaveV3");
+      if (!saved) {
+        alert("No saved game yet. Start a new game first!");
+        show('creator');
+        return;
+      }
+      state = JSON.parse(saved);
+      if (state.debuted) {
+        showIdolLife();
+      } else if (!state.company) {
+        setupCompanies();
+        show('company');
+      } else {
+        setWelcome();
+        updateStats();
+        show('trainee');
+      }
+    }
+
+    function saveCharacter() {
+      state.name = document.getElementById('idolName').value || "New Idol";
+      save();
+      show('audition');
+    }
+
+    function testSkill(skill) {
+      const score = Math.floor(Math.random() * 41) + 60;
+      state.results[skill] = score;
+      renderResults();
+    }
+
+    function renderResults() {
+      const box = document.getElementById("auditionResults");
+      box.innerHTML = Object.entries(state.results)
+        .map(([k,v]) => `<p>${k}: ${v}/100 ✅</p>`).join("");
+    }
+
+    function checkAudition() {
+      if (state.results.Dance && state.results.Vocals && state.results["Stage Presence"]) {
+        setupCompanies();
+        show('company');
+      } else {
+        alert("Finish all 3 audition tests first!");
+      }
+    }
+
+    function setupCompanies() {
+      const box = document.getElementById("companyButtons");
+      box.innerHTML = "";
+      companies.forEach(c => {
+        const btn = document.createElement("button");
+        btn.textContent = c;
+        btn.onclick = () => joinCompany(c);
+        box.appendChild(btn);
+      });
+    }
+
+    function joinCompany(company) {
+      state.company = company;
+      save();
+      setWelcome();
+      updateStats();
+      show('trainee');
+    }
+
+    function setWelcome() {
+      document.getElementById("welcomeText").textContent =
+        `${state.name}, welcome to ${state.company}! You are trainee age 13. 100 trainees compete in rankings.`;
+    }
+
+    function practice(type) {
+      if (state.stats.energy < 15) {
+        alert("You are too tired. Sleep first!");
+        return;
+      }
+      state.stats[type] += Math.floor(Math.random() * 7) + 7;
+      state.stats.energy -= 15;
+      updateStats();
+      save();
+    }
+
+    function nextDay() {
+      state.day++;
+      state.stats.energy = 100;
+      save();
+
+      if ((state.day - 1) % 10 === 0) {
+        runEvaluation();
+      } else {
+        alert("Day " + state.day + ": Company van takes you to training!");
+        updateStats();
+      }
+    }
+
+    function runEvaluation() {
+      state.evaluations++;
+      const total = state.stats.dance + state.stats.vocals + state.stats.stage;
+      let rank = Math.max(1, 100 - Math.floor(total / 4));
+      let message = "";
+
+      if (total >= 230 && state.evaluations >= 2) {
+        message = "🎉 Amazing! Your score is debut-ready. The company will make an announcement.";
+      } else if (total >= 145) {
+        message = "👍 Good job! You passed this evaluation and your ranking improved.";
+      } else {
+        state.warnings++;
+        message = "⚠️ Your score was low. Warning " + state.warnings + "/3.";
+      }
+
+      if (state.warnings >= 3) {
+        message += "<br><br>🚪 Your trainee contract ended in this demo, but you can start again and try a different strategy.";
+      }
+
+      document.getElementById("evaluationText").innerHTML = `
+        <p><b>Evaluation #${state.evaluations}</b></p>
+        <p>Dance: ${state.stats.dance}</p>
+        <p>Vocals: ${state.stats.vocals}</p>
+        <p>Stage Presence: ${state.stats.stage}</p>
+        <p><b>Your rank out of 100 trainees: #${rank}</b></p>
+        <p>${message}</p>
+      `;
+      save();
+      show('evaluation');
+    }
+
+    function continueAfterEvaluation() {
+      const total = state.stats.dance + state.stats.vocals + state.stats.stage;
+      if (state.warnings >= 3) {
+        newGame();
+        return;
+      }
+      if (total >= 230 && state.evaluations >= 2) {
+        debutAnnouncement();
+        return;
+      }
+      updateStats();
+      show('trainee');
+    }
+
+    function debutAnnouncement() {
+      state.debuted = true;
+      const groupSize = Math.floor(Math.random() * 4) + 4;
+      const shuffled = npcNames.sort(() => Math.random() - 0.5);
+      state.members = [state.name, ...shuffled.slice(0, groupSize - 1)];
+      const groupNames = ["LUMINA", "STARWAVE", "NEON HEART", "MOONLIGHT", "DREAMIX"];
+      state.groupName = groupNames[Math.floor(Math.random() * groupNames.length)];
+      save();
+
+      document.getElementById("debutText").innerHTML = `
+        <p><b>Congratulations!</b> You have been selected to debut.</p>
+        <p><b>Group Name:</b> ${state.groupName}</p>
+        <p><b>Members:</b> ${state.members.join(", ")}</p>
+        <p><b>Debut Song:</b> “Shine On Stage”</p>
+        <p>Your company begins preparing your music video, album, fan meeting, and debut showcase.</p>
+      `;
+      show('debut');
+    }
+
+    function showIdolLife() {
+      document.getElementById("idolLifeText").textContent =
+        `${state.name} debuted in ${state.groupName} under ${state.company}. You can now release albums, do fan meetings, photoshoots, world tours, and unlimited comebacks.`;
+      show('idolLife');
+    }
+
+    function idolEvent(text) {
+      document.getElementById("idolEventText").textContent = text;
+    }
+
+    function updateStats() {
+      document.getElementById("dance").textContent = state.stats.dance;
+      document.getElementById("vocals").textContent = state.stats.vocals;
+      document.getElementById("stage").textContent = state.stats.stage;
+      document.getElementById("energy").textContent = state.stats.energy;
+      document.getElementById("dayText").textContent = "Day " + state.day;
+    }
+  </script>
+</body>
+</html>
